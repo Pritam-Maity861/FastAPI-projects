@@ -1,22 +1,11 @@
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.database import get_db
-
-from app.repositories.todo import TodoRepository
+from fastapi import APIRouter, HTTPException, status
 from app.schemas.todo import TodoCreate, TodoResponse, TodoUpdate
-from app.services.todo import TodoService
+from app.dependencies.todo import Todo_service_depandency
 
 
 todoRouter = APIRouter(prefix="/todos", tags=["Todo"])
-
-def get_todo_service(db:Annotated[AsyncSession,Depends(get_db)]):
-    repo=TodoRepository(db)
-    return TodoService(repo)
-
-Todo_service_depandency=Annotated[AsyncSession,Depends(get_todo_service)]
 
 @todoRouter.get("/",response_model=list[TodoResponse])
 async def get_all_todos(service:Todo_service_depandency):
