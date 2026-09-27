@@ -7,6 +7,7 @@ import jwt
 from app.config.settings import settings
 
 
+
 password_hasher=PasswordHash.recommended()
 
 def hash_password(plain_password:str)->str:
@@ -35,4 +36,18 @@ def decode_access_token(token:str)->dict:
 
 
 
+def generate_refresh_token(user_id:uuid.UUID)->str:
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(days=settings.refresh_token_expire_days)
 
+    payload = {
+        "sub": str(user_id),
+        "iat":now,
+        "exp":expires_at,
+    }
+
+    return jwt.encode(payload,key=settings.refresh_token_secret,algorithm=settings.jwt_algorithm)
+
+
+def decode_refresh_token(token:str)->dict:
+    return jwt.decode(token,settings.refresh_token_secret,algorithms=[settings.jwt_algorithm])

@@ -1,4 +1,5 @@
-from fastapi import HTTPException, status
+from typing import Any
+from fastapi import HTTPException, status, Response, Cookie, HTTPException
 from app.repositories.user import UserRepository
 from app.schemas.user import (
     UserCreate,
@@ -11,8 +12,11 @@ from app.security import (
     hash_password,
     verify_password,
     create_access_token,
+    generate_refresh_token,
+    decode_refresh_token,
 )
 
+from datetime import timedelta
 
 
 class UserService:
@@ -44,7 +48,7 @@ class UserService:
 
         return UserResponse.model_validate(user)
 
-    async def login(self, data: UserLogin) -> UserResponse:
+    async def login(self, data: UserLogin, response: Response) -> TokenResponse:
         user = await self.repo.get_by_email(data.email)
         if user is None or not verify_password(data.password, user.hash_password):
             raise HTTPException(
@@ -57,7 +61,56 @@ class UserService:
                 detail="Invalid email or password",
             )
         access_token = create_access_token(user.id)
+        refresh_token = generate_refresh_token(user.id)
+
+        refresh_lifetime = timedelta(days=7)
+
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            max_age=int(refresh_lifetime.total_seconds()),
+            httponly=True,
+            samesite="lax",
+            secure=False,
+        )
+
         return TokenResponse(access_token=access_token)
+
+    async def refresh_session(self, refresh_token: str,response: Response)->TokenResponse:
+        if not refresh_token:
+            raise HTTPException(status_code=401, detail="Refresh token missing")
+
+        try:
+            token_data: dict[str, Any] = decode_refresh_token(refresh_token)
+            user_id: str = token_data.get("sub")
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+            )
+        
+        user=await self.repo.get_by_id(user_id)
+
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Not authenticated")
+
+        new_access_token = create_access_token(user.id)
+        new_refresh_token = generate_refresh_token(user.id)
+
+        refresh_lifetime = timedelta(days=7)
+
+        response.set_cookie(
+            key="refresh_token",
+            value=new_refresh_token,
+            max_age=int(refresh_lifetime.total_seconds()),
+            httponly=True,
+            samesite="lax",
+            secure=False,
+        )
+
+        return TokenResponse(access_token=new_access_token)
+    
+
 
 
     # async def update_user(self, user_id: uuid.UUID, data: UserUpdate) -> UserResponse:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends,status
+from fastapi import APIRouter,Depends,status,Response,Cookie
 
 from app.dependencies.user import get_user_service
 from app.schemas.user import UserCreate, UserResponse
@@ -22,19 +22,29 @@ async def register(
 @userRouter.post("/login",response_model=TokenResponse)
 async def login(
     payload:UserLogin,
+    response: Response, 
     userService:UserService=Depends(get_user_service)
 ):
-    return await userService.login(payload)
+    return await userService.login(payload,response=response)
 
 
 @userRouter.post("/get-by-id/{user_id}",response_model=UserResponse)
-async def login(
+async def get_user_by_id(
     user_id:str,
     userService:UserService=Depends(get_user_service)
 ):
     return await userService.get_user_by_id(user_id)
 
 
+@userRouter.post("/refresh-access-token")
+async def refresh_access_token(
+    response: Response,
+    refresh_token: str = Cookie(None),
+    userService:UserService=Depends(get_user_service)
+): 
+    return await userService.refresh_session(refresh_token,response=response)
+
+
 @userRouter.get("/me",response_model=UserResponse)
 async def get_me(user:CurrentUser):
-    return user
+    return user   

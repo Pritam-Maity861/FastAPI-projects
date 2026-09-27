@@ -16,6 +16,7 @@ class User(Base):
         String(255), nullable=False, unique=True, index=True
     )
     hash_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_changed_at:Mapped[datetime|None]=mapped_column(DateTime(timezone=True),default=None)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
