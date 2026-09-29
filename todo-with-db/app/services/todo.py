@@ -53,3 +53,7 @@ class TodoService:
         if todo is None:
             return None
         return await self.repo.delete(todo)
+    
+
+    async def get_user_todos_for_export(self,user_id:UUID,is_completed:bool|None=None)->list[Todo]:
+        return await self.repo.get_user_todos_for_export(user_id,is_completed)
