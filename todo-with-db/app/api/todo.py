@@ -1,21 +1,35 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Query, status
 
+from app.dependencies.security import CurrentUser
 from app.dependencies.todo import Todo_service_depandency
 from app.errors.exceptions import TodoNotFoundError
 from app.schemas.common_response_schema import SuccessResponse
-from app.schemas.todo import TodoCreate, TodoResponse, TodoUpdate
+from app.schemas.todo import TodoCreate, TodoListParams, TodoResponse, TodoUpdate
 from app.utils.response import success_response
-from app.dependencies.security import CurrentUser
 
 todoRouter = APIRouter(prefix="/todos", tags=["Todo"])
 
 
 @todoRouter.get("/", response_model=SuccessResponse[list[TodoResponse]])
-async def get_all_todos(service: Todo_service_depandency):
-    todos = await service.get_all()
-    return success_response(data=todos, message="All todo fetched successfully")
+async def get_all_todos(
+    service: Todo_service_depandency,
+    curr_user: CurrentUser,
+    filters: Annotated[TodoListParams, Query()],
+):
+    user_id=curr_user.id
+    todos,total = await service.get_all(user_id,filters)
+    total_pages=(total+filters.limit-1)//filters.limit
+    return success_response(data=todos, message="All todo fetched successfully",meta={
+        "page": filters.page,
+        "limit": filters.limit,
+        "total_items": total,
+        "total_pages": total_pages,
+        "has_next": filters.page < total_pages,
+        "has_previous": filters.page > 1
+    })
 
 
 @todoRouter.post(
@@ -23,9 +37,11 @@ async def get_all_todos(service: Todo_service_depandency):
     response_model=SuccessResponse[TodoResponse],
     status_code=status.HTTP_201_CREATED,
 )
-async def create_todo(todo_in: TodoCreate, service: Todo_service_depandency,curr_user:CurrentUser):
-    user_id=curr_user.id
-    todo = await service.create(todo_in,user_id)
+async def create_todo(
+    todo_in: TodoCreate, service: Todo_service_depandency, curr_user: CurrentUser
+):
+    user_id = curr_user.id
+    todo = await service.create(todo_in, user_id)
     return success_response(data=todo, message="Todo created successfully")
 
 

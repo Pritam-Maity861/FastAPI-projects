@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from app.errors.exceptions import DuplicateTodoError
 from app.models.todo import Todo
 from app.repositories.todo import TodoRepository
-from app.schemas.todo import TodoCreate, TodoUpdate
+from app.schemas.todo import TodoCreate, TodoListParams, TodoUpdate
 
 
 class TodoService:
@@ -23,8 +23,8 @@ class TodoService:
             raise
         
 
-    async def get_all(self) -> list[Todo]:
-        return await self.repo.get_all()
+    async def get_all(self,user_id:UUID,filters:TodoListParams) -> list[Todo]:
+        return await self.repo.get_all(user_id,filters)
 
     async def get_by_id(self, todo_id: UUID) -> Todo | None:
         todo = await self.repo.get_by_id(todo_id)
