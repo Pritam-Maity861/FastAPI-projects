@@ -21,6 +21,7 @@ class TodoUpdate(BaseModel):
 
 class TodoResponse(TodoBase):
     id: UUID
+    user_id:UUID
     created_at: datetime
     updated_at: datetime
 

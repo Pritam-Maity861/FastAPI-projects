@@ -7,6 +7,7 @@ from app.errors.exceptions import TodoNotFoundError
 from app.schemas.common_response_schema import SuccessResponse
 from app.schemas.todo import TodoCreate, TodoResponse, TodoUpdate
 from app.utils.response import success_response
+from app.dependencies.security import CurrentUser
 
 todoRouter = APIRouter(prefix="/todos", tags=["Todo"])
 
@@ -22,8 +23,9 @@ async def get_all_todos(service: Todo_service_depandency):
     response_model=SuccessResponse[TodoResponse],
     status_code=status.HTTP_201_CREATED,
 )
-async def create_todo(todo_in: TodoCreate, service: Todo_service_depandency):
-    todo = await service.create(todo_in)
+async def create_todo(todo_in: TodoCreate, service: Todo_service_depandency,curr_user:CurrentUser):
+    user_id=curr_user.id
+    todo = await service.create(todo_in,user_id)
     return success_response(data=todo, message="Todo created successfully")
 
 

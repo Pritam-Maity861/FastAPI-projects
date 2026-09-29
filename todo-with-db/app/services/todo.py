@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
+
 from app.errors.exceptions import DuplicateTodoError
 from app.models.todo import Todo
 from app.repositories.todo import TodoRepository
@@ -10,11 +12,16 @@ class TodoService:
     def __init__(self, repo: TodoRepository):
         self.repo = repo
 
-    async def create(self, todo_in: TodoCreate) -> Todo:
+    async def create(self, todo_in: TodoCreate,user_id:str) -> Todo:
+        actual_todo_obj=Todo(**todo_in.model_dump(),user_id=user_id)
         try:
-            return await self.repo.create(Todo(**todo_in.model_dump()))
-        except:  # noqa: E722
-            raise DuplicateTodoError()
+            return await self.repo.create(actual_todo_obj)
+        except IntegrityError as e:
+            if "unique_todo_user_title" in str(e):
+                raise DuplicateTodoError()
+            
+            raise
+        
 
     async def get_all(self) -> list[Todo]:
         return await self.repo.get_all()
