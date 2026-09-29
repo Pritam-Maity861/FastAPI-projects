@@ -1,6 +1,6 @@
-from pydantic_settings import BaseSettings,SettingsConfigDict
 import os
 
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 env_state=os.getenv("APP_ENV","development")
 
@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_secret:str
     refresh_token_expire_days:int=7
+    MAILTRAP_TOKEN:str
+    MAILTRAP_INBOX:str
+    MAILTRAP_SENDER:str
 
 
 def get_config_settings():
