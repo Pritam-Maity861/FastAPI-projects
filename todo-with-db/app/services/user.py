@@ -1,22 +1,27 @@
+from datetime import timedelta
 from typing import Any
-from fastapi import HTTPException, status, Response, Cookie, HTTPException
-from app.repositories.user import UserRepository
-from app.schemas.user import (
-    UserCreate,
-    UserResponse,
-    UserLogin,
-    TokenResponse,
+
+from fastapi import HTTPException, Response, status
+
+from app.errors.exceptions import (
+    InvalidCredentialsError,
+    UserAlreadyExists,
 )
 from app.models.user import User
+from app.repositories.user import UserRepository
+from app.schemas.user import (
+    TokenResponse,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+)
 from app.security import (
+    create_access_token,
+    decode_refresh_token,
+    generate_refresh_token,
     hash_password,
     verify_password,
-    create_access_token,
-    generate_refresh_token,
-    decode_refresh_token,
 )
-
-from datetime import timedelta
 
 
 class UserService:
@@ -26,9 +31,7 @@ class UserService:
     async def register(self, data: UserCreate) -> UserResponse:
         existing = await self.repo.get_by_email(data.email)
         if existing is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="email already exist."
-            )
+            raise UserAlreadyExists()
 
         password_hash = hash_password(data.password)
         user = User(
@@ -51,15 +54,9 @@ class UserService:
     async def login(self, data: UserLogin, response: Response) -> TokenResponse:
         user = await self.repo.get_by_email(data.email)
         if user is None or not verify_password(data.password, user.hash_password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password",
-            )
+            raise InvalidCredentialsError()
         if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password",
-            )
+            raise InvalidCredentialsError()
         access_token = create_access_token(user.id)
         refresh_token = generate_refresh_token(user.id)
 

@@ -1,9 +1,12 @@
+import time
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
-from app.db.database import create_tables,engine
+
 from app.api.todo import todoRouter
 from app.api.user import userRouter
-import time
+from app.db.database import engine
+from app.errors.handlers import register_exception_handlers
 
 
 @asynccontextmanager
@@ -21,6 +24,7 @@ app=FastAPI(
 )
 
 
+register_exception_handlers(app)
 
 
 @app.middleware("http")

@@ -1,12 +1,14 @@
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from datetime import UTC, datetime
 from typing import Annotated, Any
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db.database import get_db
-from app.security import decode_access_token
-from app.repositories.user import UserRepository
 from app.models.user import User
-from datetime import datetime, UTC
+from app.repositories.user import UserRepository
+from app.security import decode_access_token
 
 bearer = HTTPBearer()
 
@@ -44,7 +46,7 @@ async def get_current_user(
         if token_issued_at <= password_changed_at:
             raise HTTPException(
                 status.HTTP_401_UNAUTHORIZED,
-                detail="Not Authenticated password changed detected.",
+                detail="Not authenticated",
             )
 
     return user
